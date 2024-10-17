@@ -5,4 +5,3 @@
 	path = lib/evm
 	url = https://github.com/unionlabs/union
 	branch = main
-	sparseCheckout = true
