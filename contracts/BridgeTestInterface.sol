@@ -27,11 +27,4 @@ interface BridgeTestInterface {
   // EVENTS
   event IntentFulfilled(Intent calldata intent);
   event IntentCreated(Intent calldata intent);
-  event IntentRepaid(Intent calldata intent);
-
-
-  // FUNCTIONS
-  function bridge(Intent calldata intent) external;
-  function fulfillIntent(Intent calldata intent) external;
-  function repayIntent(Intent calldata intent) external;
 }

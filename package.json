@@ -1,8 +1,5 @@
 {
   "name": "hardhat-project",
-  "scripts": {
-    "update-union": "git submodule update --remote lib/evm"
-  },
   "devDependencies": {
     "@nomicfoundation/hardhat-foundry": "^1.1.2",
     "@nomicfoundation/hardhat-ignition": "^0.15.6",
