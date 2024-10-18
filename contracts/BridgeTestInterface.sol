@@ -1,5 +1,8 @@
 pragma solidity ^0.8.27;
 
+import "./union/apps/Base.sol";
+import "./union/core/25-handler/IBCHandler.sol";
+
 interface BridgeTestInterface {
   // ENUMS
   enum FilledStatus {
@@ -25,6 +28,14 @@ interface BridgeTestInterface {
 
 
   // EVENTS
-  event IntentFulfilled(Intent calldata intent);
-  event IntentCreated(Intent calldata intent);
+  event IntentFulfilled(Intent intent);
+  event IntentCreated(Intent intent);
+  event IntentRepaid(Intent intent);
+
+  function bridge(Intent calldata intent) external;
+  function fulfill(Intent calldata intent) external;
+  
+
+  // ERRORS
+
 }

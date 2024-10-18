@@ -1,6 +1,6 @@
 pragma solidity ^0.8.27;
 
-import "solady/utils/LibString.sol";
+import "solady/src/utils/LibString.sol";
 
 import "../24-host/IBCStore.sol";
 import "../25-handler/IBCMsgs.sol";

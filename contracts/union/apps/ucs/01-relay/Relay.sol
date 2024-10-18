@@ -1,18 +1,17 @@
 pragma solidity ^0.8.27;
 
-import "@openzeppelin-upgradeable/proxy/utils/Initializable.sol";
-import "@openzeppelin-upgradeable/proxy/utils/UUPSUpgradeable.sol";
-import "@openzeppelin-upgradeable/access/OwnableUpgradeable.sol";
-import "@openzeppelin-upgradeable/utils/PausableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
 
-import "@openzeppelin/token/ERC20/ERC20.sol";
-import "@openzeppelin/token/ERC20/IERC20.sol";
-import "@openzeppelin/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin/utils/math/Math.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts/utils/math/Math.sol";
 
-import "solady/utils/LibString.sol";
+import "solady/src/utils/LibString.sol";
 
-import "solidity-stringutils/strings.sol";
+import "solidity-stringutils/src/strings.sol";
 
 import "../../../core/04-channel/IIBCPacket.sol";
 import "../../../lib/Hex.sol";
