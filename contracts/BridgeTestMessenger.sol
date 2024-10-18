@@ -11,6 +11,7 @@ struct IntentPacket {
 
 library BridgeMessengerLib {
     bytes1 public constant ACK_SUCCESS = 0x01;
+    bytes1 public constant ACK_FAILURE = 0x02;
 
     error ErrOnlyOneChannel();
     error ErrInvalidAck();
