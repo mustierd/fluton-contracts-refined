@@ -5,6 +5,9 @@ import "@nomicfoundation/hardhat-toolbox-viem";
 import "@nomicfoundation/hardhat-foundry";
 import "@nomicfoundation/hardhat-verify";
 
+// tasks
+import "./tasks";
+
 dotenv.config();
 
 if (
