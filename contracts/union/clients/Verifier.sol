@@ -1,4 +1,4 @@
-pragma solidity ^0.8.27;
+pragma solidity ^0.8.23;
 
 /// @title Groth16 verifier template.
 /// @author Remco Bloemen

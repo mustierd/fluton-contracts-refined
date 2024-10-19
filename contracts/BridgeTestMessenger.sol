@@ -46,7 +46,7 @@ contract BridgeTestMessenger is IBCAppBase {
     using BridgeMessengerLib for *;
 
     IBCHandler private ibcHandler;
-    uint32 private srcChannelId;
+    string public channelId;
     uint64 internal timeout;
 
     constructor(IBCHandler _ibcHandler, uint64 _timeout) {
@@ -62,13 +62,16 @@ contract BridgeTestMessenger is IBCAppBase {
         IntentPacket memory packet,
         uint64 localTimeout
     ) internal {
-        if (srcChannelId == 0) {
+        if (bytes(channelId).length == 0) {
             revert BridgeMessengerLib.ErrNoChannel();
         }
         ibcHandler.sendPacket(
-            srcChannelId,
+            channelId,
             // No height timeout
-            0,
+            IbcCoreClientV1Height.Data({
+                revision_number: 0,
+                revision_height: 0
+            }),
             // Timestamp timeout
             localTimeout,
             // Raw protocol packet
@@ -78,13 +81,12 @@ contract BridgeTestMessenger is IBCAppBase {
 
     // must override and apply onlyIBC modifier
     function onRecvPacket(
-        IBCPacket calldata packet,
-        address,
-        bytes calldata
+        IbcCoreChannelV1Packet.Data calldata packet,
+        address
     ) external virtual override returns (bytes memory acknowledgement) {}
 
     function onAcknowledgementPacket(
-        IBCPacket calldata,
+        IbcCoreChannelV1Packet.Data calldata,
         bytes calldata acknowledgement,
         address
     ) external virtual override onlyIBC {
@@ -103,7 +105,7 @@ contract BridgeTestMessenger is IBCAppBase {
     }
 
     function onTimeoutPacket(
-        IBCPacket calldata,
+        IbcCoreChannelV1Packet.Data calldata,
         address
     ) external virtual override onlyIBC {
         /*
@@ -114,53 +116,59 @@ contract BridgeTestMessenger is IBCAppBase {
     }
 
     function onChanOpenInit(
-        IBCChannelOrder,
-        uint32,
-        uint32,
+        IbcCoreChannelV1GlobalEnums.Order,
+        string[] calldata,
+        string calldata,
+        string calldata,
+        IbcCoreChannelV1Counterparty.Data calldata,
         string calldata,
         address
     ) external virtual override onlyIBC {
         // This protocol is only accepting a single counterparty.
-        if (srcChannelId != 0) {
+        if (bytes(channelId).length != 0) {
             revert BridgeMessengerLib.ErrOnlyOneChannel();
         }
     }
 
     function onChanOpenTry(
-        IBCChannelOrder,
-        uint32,
-        uint32,
-        uint32,
+        IbcCoreChannelV1GlobalEnums.Order,
+        string[] calldata,
+        string calldata,
+        string calldata,
+        IbcCoreChannelV1Counterparty.Data calldata,
         string calldata,
         string calldata,
         address
     ) external virtual override onlyIBC {
         // Symmetric to onChanOpenInit
-        if (srcChannelId != 0) {
+        if (bytes(channelId).length != 0) {
             revert BridgeMessengerLib.ErrOnlyOneChannel();
         }
     }
 
     function onChanOpenAck(
-        uint32 channelId,
-        uint32,
+        string calldata,
+        string calldata _channelId,
+        string calldata,
         string calldata,
         address
     ) external virtual override onlyIBC {
         // Store the port/channel needed to send packets.
-        srcChannelId = channelId;
+        channelId = _channelId;
     }
 
     function onChanOpenConfirm(
-        uint32 channelId,
+        string calldata,
+        string calldata _channelId,
         address
     ) external virtual override onlyIBC {
         // Symmetric to onChanOpenAck
-        srcChannelId = channelId;
+        channelId = _channelId;
     }
 
     function onChanCloseInit(
-        uint32,
+        string calldata,
+        string calldata,
         address
     ) external virtual override onlyIBC {
         // The ping-pong is infinite, closing the channel is disallowed.
@@ -168,7 +176,8 @@ contract BridgeTestMessenger is IBCAppBase {
     }
 
     function onChanCloseConfirm(
-        uint32,
+        string calldata,
+        string calldata,
         address
     ) external virtual override onlyIBC {
         // Symmetric to onChanCloseInit

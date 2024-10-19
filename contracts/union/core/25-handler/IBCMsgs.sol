@@ -1,11 +1,15 @@
-pragma solidity ^0.8.27;
+pragma solidity ^0.8.23;
 
-import "../Types.sol";
+import "../../proto/ibc/core/client/v1/client.sol";
+import "../../proto/ibc/core/connection/v1/connection.sol";
+import "../../proto/ibc/core/channel/v1/channel.sol";
 
 /**
  * @dev IBCMsgs provides datagram types in [ICS-26](https://github.com/cosmos/ibc/tree/main/spec/core/ics-026-routing-module#datagram-handlers-write)
  */
 library IBCMsgs {
+    /* Client */
+
     struct MsgCreateClient {
         string clientType;
         bytes clientStateBytes;
@@ -14,125 +18,126 @@ library IBCMsgs {
     }
 
     struct MsgUpdateClient {
-        uint32 clientId;
+        string clientId;
         bytes clientMessage;
         address relayer;
     }
 
+    /* Connection */
+
     struct MsgConnectionOpenInit {
-        uint32 clientId;
-        uint32 counterpartyClientId;
+        string clientId;
+        IbcCoreConnectionV1Version.Data version;
+        IbcCoreConnectionV1Counterparty.Data counterparty;
+        uint64 delayPeriod;
         address relayer;
     }
 
     struct MsgConnectionOpenTry {
-        uint32 counterpartyClientId;
-        uint32 counterpartyConnectionId;
-        uint32 clientId;
-        bytes proofInit;
-        uint64 proofHeight;
+        IbcCoreConnectionV1Counterparty.Data counterparty; // counterpartyConnectionIdentifier, counterpartyPrefix and counterpartyClientIdentifier
+        uint64 delayPeriod;
+        string clientId; // clientID of chainA
+        bytes clientStateBytes; // clientState that chainA has for chainB
+        IbcCoreConnectionV1Version.Data[] counterpartyVersions; // supported versions of chain A
+        bytes proofInit; // proof that chainA stored connectionEnd in state (on ConnOpenInit)
+        bytes proofClient; // proof that chainA stored a light client of chainB
+        bytes proofConsensus; // proof that chainA stored chainB's consensus state at consensus height
+        IbcCoreClientV1Height.Data proofHeight; // height at which relayer constructs proof of A storing connectionEnd in state
+        IbcCoreClientV1Height.Data consensusHeight; // latest height of chain B which chain A has stored in its chain B client
         address relayer;
     }
 
     struct MsgConnectionOpenAck {
-        uint32 connectionId;
-        uint32 counterpartyConnectionId;
-        bytes proofTry;
-        uint64 proofHeight;
+        string connectionId;
+        bytes clientStateBytes; // client state for chainA on chainB
+        IbcCoreConnectionV1Version.Data version; // version that ChainB chose in ConnOpenTry
+        string counterpartyConnectionID;
+        bytes proofTry; // proof that connectionEnd was added to ChainB state in ConnOpenTry
+        bytes proofClient; // proof of client state on chainB for chainA
+        bytes proofConsensus; // proof that chainB has stored ConsensusState of chainA on its client
+        IbcCoreClientV1Height.Data proofHeight; // height that relayer constructed proofTry
+        IbcCoreClientV1Height.Data consensusHeight; // latest height of chainA that chainB has stored on its chainA client
         address relayer;
     }
 
     struct MsgConnectionOpenConfirm {
-        uint32 connectionId;
+        string connectionId;
         bytes proofAck;
-        uint64 proofHeight;
+        IbcCoreClientV1Height.Data proofHeight;
         address relayer;
     }
 
+    /* Channel */
+
     struct MsgChannelOpenInit {
-        address portId;
-        string counterpartyPortId;
-        uint32 connectionId;
-        IBCChannelOrder ordering;
-        string version;
+        string portId;
+        IbcCoreChannelV1Channel.Data channel;
         address relayer;
     }
 
     struct MsgChannelOpenTry {
-        IBCChannel channel;
+        string portId;
+        IbcCoreChannelV1Channel.Data channel;
         string counterpartyVersion;
         bytes proofInit;
-        uint64 proofHeight;
+        IbcCoreClientV1Height.Data proofHeight;
         address relayer;
     }
 
     struct MsgChannelOpenAck {
-        uint32 channelId;
+        string portId;
+        string channelId;
         string counterpartyVersion;
-        uint32 counterpartyChannelId;
+        string counterpartyChannelId;
         bytes proofTry;
-        uint64 proofHeight;
+        IbcCoreClientV1Height.Data proofHeight;
         address relayer;
     }
 
     struct MsgChannelOpenConfirm {
-        uint32 channelId;
+        string portId;
+        string channelId;
         bytes proofAck;
-        uint64 proofHeight;
+        IbcCoreClientV1Height.Data proofHeight;
         address relayer;
     }
 
     struct MsgChannelCloseInit {
-        uint32 channelId;
+        string portId;
+        string channelId;
         address relayer;
     }
 
     struct MsgChannelCloseConfirm {
-        uint32 channelId;
+        string portId;
+        string channelId;
         bytes proofInit;
-        uint64 proofHeight;
+        IbcCoreClientV1Height.Data proofHeight;
         address relayer;
     }
 
+    /* Packet relay */
+
     struct MsgPacketRecv {
-        IBCPacket[] packets;
-        bytes[] relayerMsgs;
-        address relayer;
+        IbcCoreChannelV1Packet.Data packet;
         bytes proof;
-        uint64 proofHeight;
+        IbcCoreClientV1Height.Data proofHeight;
+        address relayer;
     }
 
     struct MsgPacketAcknowledgement {
-        IBCPacket[] packets;
-        bytes[] acknowledgements;
+        IbcCoreChannelV1Packet.Data packet;
+        bytes acknowledgement;
         bytes proof;
-        uint64 proofHeight;
+        IbcCoreClientV1Height.Data proofHeight;
         address relayer;
     }
 
     struct MsgPacketTimeout {
-        IBCPacket packet;
+        IbcCoreChannelV1Packet.Data packet;
         bytes proof;
-        uint64 proofHeight;
+        IbcCoreClientV1Height.Data proofHeight;
         uint64 nextSequenceRecv;
         address relayer;
-    }
-
-    struct MsgIntentPacketRecv {
-        IBCPacket[] packets;
-        bytes[] marketMakerMsgs;
-        address marketMaker;
-        bytes emptyProof;
-    }
-
-    struct MsgBatchSend {
-        uint32 sourceChannel;
-        IBCPacket[] packets;
-    }
-
-    struct MsgBatchAcks {
-        uint32 sourceChannel;
-        IBCPacket[] packets;
-        bytes[] acks;
     }
 }

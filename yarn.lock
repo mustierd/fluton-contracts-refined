@@ -3304,7 +3304,7 @@ slice-ansi@^4.0.0:
 
 solady@^0.0.259:
   version "0.0.259"
-  resolved "https://registry.yarnpkg.com/solady/-/solady-0.0.259.tgz#cc33e11ff63aa6888077f361dc0d2fe4302206b1"
+  resolved "https://registry.yarnpkg.com/solady/src/-/solady-0.0.259.tgz#cc33e11ff63aa6888077f361dc0d2fe4302206b1"
   integrity sha512-GA23TidJxs11hdsjnh6CMi7pIRStvNerJK+t80F4VwXY3JGjxn+i3W5/mpQZAyC883gwgxLe+6Pauiemd46ezA==
 
 solc@0.8.26:
@@ -3322,7 +3322,7 @@ solc@0.8.26:
 
 solidity-bytes-utils@^0.8.2:
   version "0.8.2"
-  resolved "https://registry.yarnpkg.com/solidity-bytes-utils/-/solidity-bytes-utils-0.8.2.tgz#763d6a02fd093e93b3a97b742e97d540e66c29bd"
+  resolved "https://registry.yarnpkg.com/solidity-bytes-utils/contracts/-/solidity-bytes-utils-0.8.2.tgz#763d6a02fd093e93b3a97b742e97d540e66c29bd"
   integrity sha512-cqXPYAV2auhpdKSTPuqji0CwpSceZDu95CzqSM/9tDJ2MoMaMsdHTpOIWtVw31BIqqGPNmIChCswzbw0tHaMTw==
   dependencies:
     ds-test "github:dapphub/ds-test"
@@ -3355,7 +3355,7 @@ solidity-coverage@^0.8.1:
 
 "solidity-stringutils@github:LayerZero-Labs/solidity-stringutils":
   version "0.0.1"
-  resolved "https://codeload.github.com/LayerZero-Labs/solidity-stringutils/tar.gz/eb21d6b502c2741145ab2a90f5f5b4fda9dfb218"
+  resolved "https://codeload.github.com/LayerZero-Labs/solidity-stringutils/src/tar.gz/eb21d6b502c2741145ab2a90f5f5b4fda9dfb218"
 
 source-map-support@^0.5.13:
   version "0.5.21"

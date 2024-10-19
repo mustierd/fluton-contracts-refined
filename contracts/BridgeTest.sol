@@ -120,9 +120,8 @@ contract BridgeTest is BridgeTestInterface, BridgeTestMessenger, Ownable {
     }
 
     function onRecvPacket(
-        IBCPacket calldata packet,
-        address,
-        bytes calldata
+        IbcCoreChannelV1Packet.Data calldata packet,
+        address
     ) external virtual override onlyIBC returns (bytes memory acknowledgement) {
         IntentPacket memory pp = BridgeMessengerLib.decode(packet.data);
 

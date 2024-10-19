@@ -1,6 +1,9 @@
-pragma solidity ^0.8.27;
+pragma solidity ^0.8.23;
 
+import {ProtoBufRuntime} from "../proto/ProtoBufRuntime.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
+import "../proto/ibc/core/commitment/v1/commitment.sol";
+import "../proto/cosmos/ics23/v1/proofs.sol";
 import "./UnionICS23.sol";
 
 library Ics23 {
@@ -29,17 +32,21 @@ library Ics23 {
         UnionIcs23.NonExistenceProof calldata nonExistProof,
         UnionIcs23.ExistenceProof calldata existProof,
         bytes32 root,
-        bytes memory prefix,
+        bytes calldata prefix,
         bytes calldata key
     ) internal pure returns (VerifyChainedNonMembershipError) {
-        (bytes32 subroot, Proof.CalculateRootError rCode) =
-            Proof.calculateRoot(nonExistProof);
+        (bytes32 subroot, Proof.CalculateRootError rCode) = Proof.calculateRoot(
+            nonExistProof
+        );
         if (rCode != Proof.CalculateRootError.None) {
             return VerifyChainedNonMembershipError.InvalidProofRoot;
         }
 
         Proof.VerifyNonExistenceError vCode = Proof.verify(
-            nonExistProof, UnionIcs23.getIavlProofSpec(), subroot, key
+            nonExistProof,
+            UnionIcs23.getIavlProofSpec(),
+            subroot,
+            key
         );
 
         // Map non existence error to non membership error
@@ -95,7 +102,8 @@ library Ics23 {
                 return VerifyChainedNonMembershipError.InvalidSpec;
             } else if (mCode == Proof.VerifyExistenceError.CalculateRoot) {
                 return
-                    VerifyChainedNonMembershipError.InvalidIntermediateProofRoot;
+                    VerifyChainedNonMembershipError
+                        .InvalidIntermediateProofRoot;
             } else if (mCode == Proof.VerifyExistenceError.RootNotMatching) {
                 return
                     VerifyChainedNonMembershipError.IntermateProofRootMismatch;
@@ -127,12 +135,13 @@ library Ics23 {
     function verifyChainedMembership(
         UnionIcs23.ExistenceProof[2] calldata proofs,
         bytes32 root,
-        bytes memory prefix,
+        bytes calldata prefix,
         bytes calldata key,
         bytes calldata value
     ) internal pure returns (VerifyChainedMembershipError) {
-        (bytes32 subroot, Proof.CalculateRootError rCode) =
-            Proof.calculateRoot(proofs[0]);
+        (bytes32 subroot, Proof.CalculateRootError rCode) = Proof.calculateRoot(
+            proofs[0]
+        );
         if (rCode != Proof.CalculateRootError.None) {
             return VerifyChainedMembershipError.InvalidProofRoot;
         }
@@ -140,7 +149,10 @@ library Ics23 {
         // We don't want the above root calculation to be done again. Since we calculated it, we also don't
         // need to check it against anything.
         Proof.VerifyExistenceError vCode = Proof.verifyNoRootCheck(
-            proofs[0], UnionIcs23.getIavlProofSpec(), key, value
+            proofs[0],
+            UnionIcs23.getIavlProofSpec(),
+            key,
+            value
         );
         if (vCode != Proof.VerifyExistenceError.None) {
             return convertExistenceError(vCode);
@@ -206,45 +218,6 @@ library Ops {
         ValueLength
     }
 
-    function _sz_varint(
-        uint256 i
-    ) internal pure returns (uint256) {
-        uint256 count = 1;
-        assembly {
-            i := shr(7, i)
-            for {} gt(i, 0) {} {
-                i := shr(7, i)
-                count := add(count, 1)
-            }
-        }
-        return count;
-    }
-
-    function _encode_varint(
-        uint256 x,
-        uint256 p,
-        bytes memory bs
-    ) internal pure returns (uint256) {
-        /**
-         * Refer to https://developers.google.com/protocol-buffers/docs/encoding
-         */
-        uint256 sz = 0;
-        assembly {
-            let bsptr := add(bs, p)
-            let byt := and(x, 0x7f)
-            for {} gt(shr(7, x), 0) {} {
-                mstore8(bsptr, or(0x80, byt))
-                bsptr := add(bsptr, 1)
-                sz := add(sz, 1)
-                x := shr(7, x)
-                byt := and(x, 0x7f)
-            }
-            mstore8(bsptr, byt)
-            sz := add(sz, 1)
-        }
-        return sz;
-    }
-
     // LeafOp operations
     function applyLeafOp(
         bytes calldata prefix,
@@ -257,13 +230,15 @@ library Ops {
         if (value.length == 0) return ("", ApplyLeafOpError.ValueLength);
 
         // tm/iavl specs set hashOp for prehash_key to NOOP and lengthOp to VAR_PROTO
-        bytes memory encodedKey = new bytes(_sz_varint(key.length));
-        _encode_varint(key.length, 32, encodedKey);
+        bytes memory encodedKey = new bytes(
+            ProtoBufRuntime._sz_varint(key.length)
+        );
+        ProtoBufRuntime._encode_varint(key.length, 32, encodedKey);
 
         // tm/iavl specs set hashOp for prehash_value to SHA256 and lengthOp to VAR_PROTO
         bytes32 hashedValue = sha256(value);
-        bytes memory encodedValue = new bytes(_sz_varint(32));
-        _encode_varint(32, 32, encodedValue);
+        bytes memory encodedValue = new bytes(ProtoBufRuntime._sz_varint(32));
+        ProtoBufRuntime._encode_varint(32, 32, encodedValue);
 
         bytes32 data = sha256(
             abi.encodePacked(prefix, encodedKey, key, encodedValue, hashedValue)
@@ -291,8 +266,11 @@ library Ops {
     ) internal pure returns (bytes32, ApplyInnerOpError) {
         //require(child.length > 0); // dev: Inner op needs child value
         if (child.length == 0) return ("", ApplyInnerOpError.ChildLength);
-        bytes memory preImage =
-            abi.encodePacked(innerOp.prefix, child, innerOp.suffix);
+        bytes memory preImage = abi.encodePacked(
+            innerOp.prefix,
+            child,
+            innerOp.suffix
+        );
 
         // inner_spec.hash is always SHA256 in the tm/iavl specs
         return (sha256(preImage), ApplyInnerOpError.None);
@@ -337,7 +315,7 @@ library Proof {
     function verifyNoRootCheck(
         UnionIcs23.ExistenceProof calldata proof,
         UnionIcs23.ProofSpec memory spec,
-        bytes memory key,
+        bytes calldata key,
         bytes memory value
     ) internal pure returns (VerifyExistenceError) {
         //require(BytesLib.equal(proof.key, key)); // dev: Provided key doesn't match proof
@@ -361,7 +339,7 @@ library Proof {
         UnionIcs23.ExistenceProof calldata proof,
         UnionIcs23.ProofSpec memory spec,
         bytes32 commitmentRoot,
-        bytes memory key,
+        bytes calldata key,
         bytes memory value
     ) internal pure returns (VerifyExistenceError) {
         //require(BytesLib.equal(proof.key, key)); // dev: Provided key doesn't match proof
@@ -403,8 +381,11 @@ library Proof {
         if (proof.leafPrefix.length == 0) {
             return ("", CalculateRootError.LeafNil);
         }
-        (bytes32 root, Ops.ApplyLeafOpError lCode) =
-            Ops.applyLeafOp(proof.leafPrefix, proof.key, proof.value);
+        (bytes32 root, Ops.ApplyLeafOpError lCode) = Ops.applyLeafOp(
+            proof.leafPrefix,
+            proof.key,
+            proof.value
+        );
         if (lCode != Ops.ApplyLeafOpError.None) {
             return ("", CalculateRootError.LeafOp);
         }
@@ -453,8 +434,9 @@ library Proof {
 
             // innerOp.prefix is hardcoded to be 0 in both specs
             if (
-                innerOp.prefix.length < spec.minPrefixLength
-                    || innerOp.prefix[0] == 0 || innerOp.prefix.length > max
+                innerOp.prefix.length < spec.minPrefixLength ||
+                innerOp.prefix[0] == 0 ||
+                innerOp.prefix.length > max
             ) {
                 return CheckAgainstSpecError.OpsCheckAgainstSpec;
             }
@@ -534,8 +516,11 @@ library Proof {
             }
         } else {
             //require(isLeftNeighbor(spec, proof.left.path, proof.right.path)); // dev: isLeftNeighbor: right proof missing, left proof must be right-most
-            bool isLeftNeigh =
-                isLeftNeighbor(spec, proof.left.path, proof.right.path);
+            bool isLeftNeigh = isLeftNeighbor(
+                spec,
+                proof.left.path,
+                proof.right.path
+            );
             if (!isLeftNeigh) {
                 return VerifyNonExistenceError.IsLeftNeighbor;
             }
@@ -564,8 +549,10 @@ library Proof {
         UnionIcs23.InnerOp[] calldata path,
         uint256 length
     ) private pure returns (bool) {
-        (uint256 minPrefix, uint256 maxPrefix, uint256 suffix) =
-            getPadding(spec, 0);
+        (uint256 minPrefix, uint256 maxPrefix, uint256 suffix) = getPadding(
+            spec,
+            0
+        );
         for (uint256 i; i < length; i++) {
             if (!hasPadding(path[i], minPrefix, maxPrefix, suffix)) {
                 return false;
@@ -580,8 +567,10 @@ library Proof {
         UnionIcs23.InnerOp[] calldata path,
         uint256 length
     ) private pure returns (bool) {
-        (uint256 minPrefix, uint256 maxPrefix, uint256 suffix) =
-            getPadding(spec, 1);
+        (uint256 minPrefix, uint256 maxPrefix, uint256 suffix) = getPadding(
+            spec,
+            1
+        );
         for (uint256 i; i < length; i++) {
             if (!hasPadding(path[i], minPrefix, maxPrefix, suffix)) {
                 return false;
@@ -596,11 +585,15 @@ library Proof {
         UnionIcs23.InnerOp calldata left,
         UnionIcs23.InnerOp calldata right
     ) private pure returns (bool) {
-        (uint256 leftIdx, OrderFromPaddingError lCode) =
-            orderFromPadding(spec, left);
+        (uint256 leftIdx, OrderFromPaddingError lCode) = orderFromPadding(
+            spec,
+            left
+        );
         if (lCode != OrderFromPaddingError.None) return false;
-        (uint256 rightIdx, OrderFromPaddingError rCode) =
-            orderFromPadding(spec, right);
+        (uint256 rightIdx, OrderFromPaddingError rCode) = orderFromPadding(
+            spec,
+            right
+        );
         if (lCode != OrderFromPaddingError.None) return false;
         if (rCode != OrderFromPaddingError.None) return false;
 
@@ -616,10 +609,10 @@ library Proof {
         uint256 rightIdx = right.length - 1;
         while (leftIdx >= 0 && rightIdx >= 0) {
             if (
-                keccak256(left[leftIdx].prefix)
-                    == keccak256(right[rightIdx].prefix)
-                    && keccak256(left[leftIdx].suffix)
-                        == keccak256(right[rightIdx].suffix)
+                keccak256(left[leftIdx].prefix) ==
+                keccak256(right[rightIdx].prefix) &&
+                keccak256(left[leftIdx].suffix) ==
+                keccak256(right[rightIdx].suffix)
             ) {
                 leftIdx -= 1;
                 rightIdx -= 1;
@@ -651,8 +644,10 @@ library Proof {
         UnionIcs23.InnerOp calldata op
     ) private pure returns (uint256, OrderFromPaddingError) {
         for (uint256 branch; branch < 2; branch++) {
-            (uint256 minp, uint256 maxp, uint256 suffix) =
-                getPadding(spec, branch);
+            (uint256 minp, uint256 maxp, uint256 suffix) = getPadding(
+                spec,
+                branch
+            );
             if (hasPadding(op, minp, maxp, suffix) == true) {
                 return (branch, OrderFromPaddingError.None);
             }

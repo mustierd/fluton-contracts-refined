@@ -1,12 +1,10 @@
-pragma solidity ^0.8.27;
+pragma solidity ^0.8.23;
 
 library Hex {
     error ErrInvalidHexAddress();
 
     // Convert 32 hexadecimal digits into 16 bytes.
-    function hexToBytes16(
-        bytes32 h
-    ) internal pure returns (bytes16 b) {
+    function hexToBytes16(bytes32 h) internal pure returns (bytes16 b) {
         unchecked {
             // Ensure all chars below 128
             if (
@@ -200,9 +198,7 @@ library Hex {
         }
     }
 
-    function hexToAddress(
-        string memory s
-    ) internal pure returns (address) {
+    function hexToAddress(string memory s) internal pure returns (address) {
         if (bytes(s).length != 42) {
             revert ErrInvalidHexAddress();
         }
@@ -222,9 +218,7 @@ library Hex {
         return address(bytes20(left) | (bytes20(right) >> 32));
     }
 
-    function atoi(
-        bytes1 b
-    ) internal pure returns (uint8 res) {
+    function atoi(bytes1 b) internal pure returns (uint8 res) {
         if (b >= "0" && b <= "9") {
             return uint8(b) - uint8(bytes1("0"));
         } else if (b >= "A" && b <= "F") {
@@ -235,9 +229,7 @@ library Hex {
         return uint8(b);
     }
 
-    function hexToUint256(
-        string memory s
-    ) internal pure returns (uint256) {
+    function hexToUint256(string memory s) internal pure returns (uint256) {
         bytes memory b = bytes(s);
         uint256 number;
         for (uint256 i = 2; i < b.length; i++) {
