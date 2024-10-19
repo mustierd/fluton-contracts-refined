@@ -1,4 +1,3 @@
-import BridgeTestModule from "../../ignition/modules/BridgeTest";
 import tokens from "../../config/tokens";
 import addresses from "../../config/union";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
@@ -6,23 +5,23 @@ import { HardhatRuntimeEnvironment } from "hardhat/types";
 async function deploy({ networkId }: { networkId: number }, hre: HardhatRuntimeEnvironment) {
   const wrappedNativeTokenAddress = tokens[networkId].find((t) => t.symbol === "WETH")?.address;
   const ibcHandlerAddress = addresses[networkId].IBCHandler;
+  const timeoutInSeconds = 60 * 60 * 24 * 7; // 7 days
 
   if (!wrappedNativeTokenAddress || !ibcHandlerAddress) {
     throw new Error("Missing addresses");
   }
 
-  const { bridgeTest } = await hre.ignition.deploy(BridgeTestModule, {
-    parameters: {
-      BridgeTestModule: {
-        _wrappedNativeToken: wrappedNativeTokenAddress,
-        _ibcHandler: ibcHandlerAddress,
-      },
-    },
-  });
+  const contract = await hre.viem.deployContract("BridgeTest", [
+    wrappedNativeTokenAddress,
+    ibcHandlerAddress,
+    timeoutInSeconds,
+  ]);
 
-  console.log(`BridgeTest deployed to: ${bridgeTest.address}`);
+  const networkName = Object.keys(hre.config.networks).find((key) => hre.config.networks[key].chainId === networkId);
 
-  return bridgeTest.address;
+  console.log(`BridgeTest deployed to: ${contract.address} on network: ${networkName}`);
+
+  return contract.address;
 }
 
 export default deploy;
