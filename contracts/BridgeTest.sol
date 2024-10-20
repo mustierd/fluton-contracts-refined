@@ -109,14 +109,14 @@ contract BridgeTest is BridgeTestInterface, BridgeTestMessenger, Ownable {
 
         emit IntentFulfilled(intent);
 
-        // send cross chain message to settle the intent
-        uint64 counterpartyTimeout = uint64(block.timestamp * 1e9) + timeout;
+        // send cross chain message to settle the intent (disabled for now)
+        /* uint64 counterpartyTimeout = uint64(block.timestamp * 1e9) + timeout;
         IntentPacket memory packet = IntentPacket({
             intent: intent,
             counterpartyTimeout: counterpartyTimeout
         });
 
-        initiate(packet, counterpartyTimeout);
+        initiate(packet, counterpartyTimeout); */
     }
 
     function onRecvPacket(
@@ -145,6 +145,7 @@ contract BridgeTest is BridgeTestInterface, BridgeTestMessenger, Ownable {
         feeReceiver = _feeReceiver;
     }
 
+    // INTERNAL FUNCTIONS
     function _repay(Intent memory intent) internal {
         // take fee
         uint256 feeAmount = (intent.inputAmount * fee) / 10000;
