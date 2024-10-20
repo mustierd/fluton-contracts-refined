@@ -19,6 +19,7 @@
     "dotenv": "^16.4.5",
     "hardhat": "^2.22.13",
     "hardhat-gas-reporter": "^1.0.8",
+    "hardhat-switch-network": "^1.1.1",
     "solady": "^0.0.259",
     "solidity-bytes-utils": "^0.8.2",
     "solidity-coverage": "^0.8.1",
