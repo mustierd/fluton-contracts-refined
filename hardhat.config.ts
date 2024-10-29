@@ -4,6 +4,7 @@ import "@nomicfoundation/hardhat-viem";
 import "@nomicfoundation/hardhat-toolbox-viem";
 import "@nomicfoundation/hardhat-foundry";
 import "@nomicfoundation/hardhat-verify";
+import "hardhat-switch-network";
 
 // tasks
 import "./tasks";

@@ -2218,6 +2218,11 @@ hardhat-gas-reporter@^1.0.8:
     eth-gas-reporter "^0.2.25"
     sha1 "^1.1.1"
 
+hardhat-switch-network@^1.1.1:
+  version "1.1.1"
+  resolved "https://registry.yarnpkg.com/hardhat-switch-network/-/hardhat-switch-network-1.1.1.tgz#ae815253b64887fdbfb081db04939408ab5c98ea"
+  integrity sha512-FkdXl964i5zq345Qs6JlE6bjGkof1FCrTSMS9KwevMHAr8C6Ed8YEhE3j92CDACN0Sk3l7F6XDMaPU9TiErtEg==
+
 hardhat@^2.22.13:
   version "2.22.13"
   resolved "https://registry.yarnpkg.com/hardhat/-/hardhat-2.22.13.tgz#1d2c7c4b640d060ae0f5b04757322118a003955a"
