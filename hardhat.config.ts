@@ -33,6 +33,9 @@ const config: HardhatUserConfig = {
       viaIR: true,
     },
   },
+  paths: {
+    sources: "./contracts/evm",
+  },
   defaultNetwork: "sepolia",
   networks: {
     sepolia: {

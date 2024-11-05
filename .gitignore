@@ -19,3 +19,7 @@ ignition/deployments/chain-31337
 # Hardhat Ignition default folder with artifacts etc.
 ignition/deployments/chain-*/journal.jsonl
 ignition/deployments/chain-*/**
+
+# contracts/cosmos folder
+/contracts/cosmos/target
+/contracts/cosmos/schema
