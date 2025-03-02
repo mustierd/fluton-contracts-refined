@@ -1,7 +1,9 @@
+// SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.27;
 
 import "./union/apps/Base.sol";
 import "./union/core/25-handler/IBCHandler.sol";
+import "./BridgeParams.sol";
 
 enum FilledStatus {
     NOT_FILLED,
@@ -29,7 +31,7 @@ interface BridgeTestInterface {
     event IntentRepaid(Intent intent);
 
     // FUNCTIONS
-    function bridge(
+    /*function bridge(
         address sender,
         address receiver,
         address relayer,
@@ -38,7 +40,8 @@ interface BridgeTestInterface {
         uint256 inputAmount,
         uint256 outputAmount,
         uint32 destinationChainId
-    ) external payable;
+    ) external payable;*/
+    function bridgeWithPermit(BridgeParams calldata params) external payable;
 
     function fulfill(Intent calldata intent) external payable;
 

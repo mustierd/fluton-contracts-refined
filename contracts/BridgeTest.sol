@@ -1,8 +1,10 @@
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.27;
 
-import "@uniswap/universal-router/contracts/interfaces/external/IWETH9.sol";
+import "@uniswap/v3-periphery/contracts/interfaces/external/IWETH9.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-
+import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import "./BridgeParams.sol";
 import "./BridgeTestMessenger.sol";
 import "./BridgeTestInterface.sol";
 import "./union/apps/Base.sol";
@@ -13,7 +15,14 @@ import "./union/core/25-handler/IBCHandler.sol";
  * @notice This contract is only for testing purposes and does not represent the actual Bridge contract. Therefore, it is not advised to use it in production.
  */
 contract BridgeTest is BridgeTestInterface, BridgeTestMessenger, Ownable {
+    
     IWETH9 public immutable WETH;
+    bytes32 public constant BRIDGE_TYPEHASH = keccak256(
+        "Bridge(address sender,address receiver,address relayer,address inputToken,address outputToken,uint256 inputAmount,uint256 outputAmount,uint32 destinationChainId,uint256 nonce)"
+    );
+    bytes32 public immutable DOMAIN_SEPARATOR;
+    mapping(address => uint256) public nonces;
+
     uint256 public fee = 100; // 1%
     address public feeReceiver = 0xBdc3f1A02e56CD349d10bA8D2B038F774ae22731;
 
@@ -25,45 +34,68 @@ contract BridgeTest is BridgeTestInterface, BridgeTestMessenger, Ownable {
         uint64 _timeout
     ) BridgeTestMessenger(_ibcHandler, _timeout) Ownable(msg.sender) {
         WETH = _wrappedNativeToken;
+        DOMAIN_SEPARATOR = keccak256(
+            abi.encode(
+                BRIDGE_TYPEHASH,
+                keccak256(bytes("BridgeWithPermit")),
+                keccak256(bytes("1")),
+                block.chainid,
+                address(this)
+            )
+        );
     }
 
-    function bridge(
-        address sender,
-        address receiver,
-        address relayer,
-        address inputToken,
-        address outputToken,
-        uint256 inputAmount,
-        uint256 outputAmount,
-        uint32 destinationChainId
-    ) external payable {
+    function bridgeWithPermit(
+        BridgeParams calldata params
+    ) external payable {     
+        uint256 currentNonce = nonces[params.sender];
+        bytes32 structHash = keccak256(
+            abi.encode(
+                BRIDGE_TYPEHASH,
+                params.sender,
+                params.receiver,
+                params.relayer,
+                params.inputToken,
+                params.outputToken,
+                params.inputAmount,
+                params.outputAmount,
+                params.destinationChainId,
+                currentNonce
+            )
+        );
+        bytes32 digest = keccak256(abi.encodePacked("\x19\x01", DOMAIN_SEPARATOR, structHash)); 
+
+        bytes memory signature = abi.encodePacked(params.r, params.s, params.v);
+        require(isValidSignature(params.sender, digest, signature), "Invalid signature");
+        nonces[params.sender]++;
+
         uint256 id = uint256(
             keccak256(
                 abi.encodePacked(
-                    sender,
-                    receiver,
-                    relayer,
-                    inputToken,
-                    outputToken,
-                    inputAmount,
-                    outputAmount,
-                    destinationChainId,
+                    params.sender,
+                    params.receiver,
+                    params.relayer,
+                    params.inputToken,
+                    params.outputToken,
+                    params.inputAmount,
+                    params.outputAmount,
+                    params.destinationChainId,
                     block.timestamp
                 )
             )
         );
 
         Intent memory intent = Intent({
-            sender: sender,
-            receiver: receiver,
-            relayer: relayer,
-            inputToken: inputToken,
-            outputToken: outputToken,
-            inputAmount: inputAmount,
-            outputAmount: outputAmount,
+            sender: params.sender,
+            receiver: params.receiver,
+            relayer: params.relayer,
+            inputToken: params.inputToken,
+            outputToken: params.outputToken,
+            inputAmount: params.inputAmount,
+            outputAmount: params.outputAmount,
             id: id,
             originChainId: uint32(block.chainid),
-            destinationChainId: destinationChainId,
+            destinationChainId: params.destinationChainId,
             filledStatus: FilledStatus.NOT_FILLED
         });
 
@@ -76,7 +108,7 @@ contract BridgeTest is BridgeTestInterface, BridgeTestMessenger, Ownable {
         } else {
             // if the input token is not WETH, transfer the amount from the sender to the contract (lock)
             IERC20(intent.inputToken).transferFrom(
-                msg.sender,
+                params.sender,
                 address(this),
                 intent.inputAmount
             );
@@ -84,7 +116,22 @@ contract BridgeTest is BridgeTestInterface, BridgeTestMessenger, Ownable {
 
         doesIntentExist[id] = true;
 
-        emit IntentCreated(intent);
+        //emit IntentCreated(intent);
+        emit IntentCreated(
+            Intent({
+                sender: params.sender,
+                receiver: params.receiver,
+                relayer: params.relayer,
+                inputToken: params.inputToken,
+                outputToken: params.outputToken,
+                inputAmount: params.inputAmount,
+                outputAmount: params.outputAmount,
+                id: id,
+                originChainId: uint32(block.chainid),
+                destinationChainId: params.destinationChainId,
+                filledStatus: FilledStatus.NOT_FILLED
+            })
+        );
     }
 
     function fulfill(Intent calldata intent) external payable {
@@ -178,6 +225,21 @@ contract BridgeTest is BridgeTestInterface, BridgeTestMessenger, Ownable {
         emit IntentRepaid(intent);
 
         doesIntentExist[intent.id] = false; // delete the intent
+    }
+
+    function isValidSignature(address signer, bytes32 digest, bytes memory signature) public view returns (bool) {
+        uint256 codeSize;
+        
+        assembly { codeSize := extcodesize(signer) }
+        
+        if (codeSize == 0) {
+            return ECDSA.recover(digest, signature) == signer;
+        } else {
+            (bool success, bytes memory result) = signer.staticcall(
+                abi.encodeWithSignature("isValidSignature(bytes32,bytes)", digest, signature)
+            );
+            return (success && result.length == 32 && abi.decode(result, (bytes4)) == 0x1626ba7e);
+        }
     }
 
     receive() external payable {}

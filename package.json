@@ -24,7 +24,10 @@
     "solidity-coverage": "^0.8.1",
     "solidity-stringutils": "github:LayerZero-Labs/solidity-stringutils",
     "ts-node": "^10.9.2",
-    "typescript": "^5.6.3",
+    "typescript": "~5.0.0",
     "viem": "^2.21.25"
+  },
+  "dependencies": {
+    "@uniswap/v3-periphery": "^1.4.4"
   }
 }

@@ -2,7 +2,7 @@ import type { HardhatUserConfig } from "hardhat/config";
 import dotenv from "dotenv";
 import "@nomicfoundation/hardhat-viem";
 import "@nomicfoundation/hardhat-toolbox-viem";
-import "@nomicfoundation/hardhat-foundry";
+// import "@nomicfoundation/hardhat-foundry";
 import "@nomicfoundation/hardhat-verify";
 
 dotenv.config();
