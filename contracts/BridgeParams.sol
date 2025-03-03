@@ -10,7 +10,5 @@ struct BridgeParams {
     uint256 inputAmount;
     uint256 outputAmount;
     uint32 destinationChainId;
-    uint8 v;
-    bytes32 r;
-    bytes32 s;
+    bytes signature;
 }

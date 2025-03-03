@@ -4,6 +4,7 @@ pragma solidity ^0.8.27;
 import "@uniswap/v3-periphery/contracts/interfaces/external/IWETH9.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import "@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol";
 import "./BridgeParams.sol";
 import "./BridgeTestMessenger.sol";
 import "./BridgeTestInterface.sol";
@@ -65,8 +66,8 @@ contract BridgeTest is BridgeTestInterface, BridgeTestMessenger, Ownable {
         );
         bytes32 digest = keccak256(abi.encodePacked("\x19\x01", DOMAIN_SEPARATOR, structHash)); 
 
-        bytes memory signature = abi.encodePacked(params.r, params.s, params.v);
-        require(isValidSignature(params.sender, digest, signature), "Invalid signature");
+        require(SignatureChecker.isValidSignatureNow(params.sender, digest, params.signature),"Invalid signature");
+
         nonces[params.sender]++;
 
         uint256 id = uint256(
@@ -225,21 +226,6 @@ contract BridgeTest is BridgeTestInterface, BridgeTestMessenger, Ownable {
         emit IntentRepaid(intent);
 
         doesIntentExist[intent.id] = false; // delete the intent
-    }
-
-    function isValidSignature(address signer, bytes32 digest, bytes memory signature) public view returns (bool) {
-        uint256 codeSize;
-        
-        assembly { codeSize := extcodesize(signer) }
-        
-        if (codeSize == 0) {
-            return ECDSA.recover(digest, signature) == signer;
-        } else {
-            (bool success, bytes memory result) = signer.staticcall(
-                abi.encodeWithSignature("isValidSignature(bytes32,bytes)", digest, signature)
-            );
-            return (success && result.length == 32 && abi.decode(result, (bytes4)) == 0x1626ba7e);
-        }
     }
 
     receive() external payable {}
