@@ -10,12 +10,13 @@ import "./BridgeTestMessenger.sol";
 import "./BridgeTestInterface.sol";
 import "./union/apps/Base.sol";
 import "./union/core/25-handler/IBCHandler.sol";
+import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
 /**
  * @title BridgeTest
  * @notice This contract is only for testing purposes and does not represent the actual Bridge contract. Therefore, it is not advised to use it in production.
  */
-contract BridgeTest is BridgeTestInterface, BridgeTestMessenger, Ownable {
+contract BridgeTest is BridgeTestInterface, BridgeTestMessenger, Ownable, ReentrancyGuard {
     
     IWETH9 public immutable WETH;
     bytes32 public constant BRIDGE_TYPEHASH = keccak256(
@@ -48,7 +49,7 @@ contract BridgeTest is BridgeTestInterface, BridgeTestMessenger, Ownable {
 
     function bridgeWithPermit(
         BridgeParams calldata params
-    ) external payable {     
+    ) external payable nonReentrant  {     
         uint256 currentNonce = nonces[params.sender];
         bytes32 structHash = keccak256(
             abi.encode(
@@ -135,10 +136,11 @@ contract BridgeTest is BridgeTestInterface, BridgeTestMessenger, Ownable {
         );
     }
 
-    function fulfill(Intent calldata intent) external payable {
+    function fulfill(Intent calldata intent) external payable nonReentrant  {
         if (intent.relayer != msg.sender) {
             revert UnauthorizedRelayer();
         }
+        doesIntentExist[intent.id] = true;
 
         if (intent.outputToken == address(WETH) && msg.value > 0) {
             // if the output token is WETH, transfer the amount from the contract to the receiver
@@ -153,7 +155,6 @@ contract BridgeTest is BridgeTestInterface, BridgeTestMessenger, Ownable {
             );
         }
 
-        doesIntentExist[intent.id] = true;
 
         emit IntentFulfilled(intent);
 
@@ -193,16 +194,17 @@ contract BridgeTest is BridgeTestInterface, BridgeTestMessenger, Ownable {
         feeReceiver = _feeReceiver;
     }
 
-    function _repay(Intent memory intent) internal {
+    function _repay(Intent memory intent) internal nonReentrant {
         // take fee
         uint256 feeAmount = (intent.inputAmount * fee) / 10000;
         uint256 repayAmount = intent.inputAmount - feeAmount;
+        doesIntentExist[intent.id] = false; // delete the intent
 
         if (intent.inputToken == address(WETH)) {
             // if the input token is WETH, transfer the amount from the contract to the sender
 
             // unwrap if contract has WETH
-            try WETH.withdraw(repayAmount) {} catch {}
+            WETH.withdraw(repayAmount);
             payable(intent.relayer).transfer(repayAmount);
         } else {
             // if the input token is not WETH, transfer the amount from the contract to the sender
@@ -215,7 +217,7 @@ contract BridgeTest is BridgeTestInterface, BridgeTestMessenger, Ownable {
                 // if the input token is WETH, transfer the amount from the contract to the fee receiver
 
                 // unwrap if contract has WETH
-                try WETH.withdraw(feeAmount) {} catch {}
+                WETH.withdraw(feeAmount);
                 payable(feeReceiver).transfer(feeAmount);
             } else {
                 // if the input token is not WETH, transfer the amount from the contract to the fee receiver
@@ -225,7 +227,6 @@ contract BridgeTest is BridgeTestInterface, BridgeTestMessenger, Ownable {
 
         emit IntentRepaid(intent);
 
-        doesIntentExist[intent.id] = false; // delete the intent
     }
 
     receive() external payable {}
