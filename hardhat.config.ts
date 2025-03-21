@@ -32,7 +32,7 @@ const config: HardhatUserConfig = {
   defaultNetwork: "sepolia",
   networks: {
     sepolia: {
-      url: "https://rpc.sepolia.org",
+      url: "https://eth-sepolia.public.blastapi.io",
       accounts: [process.env.PRIVATE_KEY_1],
       chainId: 11155111,
     },
@@ -47,7 +47,7 @@ const config: HardhatUserConfig = {
       chainId: 11155420,
     },
     arbitrumTestnet: {
-      url: "https://arbitrum-sepolia.blockpi.network/v1/rpc/public",
+      url: "https://arbitrum-sepolia.drpc.org",
       accounts: [process.env.PRIVATE_KEY_1],
       chainId: 421614,
     },

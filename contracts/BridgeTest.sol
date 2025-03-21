@@ -47,6 +47,66 @@ contract BridgeTest is BridgeTestInterface, BridgeTestMessenger, Ownable, Reentr
         );
     }
 
+    function bridge(
+        address sender,
+        address receiver,
+        address relayer,
+        address inputToken,
+        address outputToken,
+        uint256 inputAmount,
+        uint256 outputAmount,
+        uint32 destinationChainId
+    ) external payable {
+        uint256 id = uint256(
+            keccak256(
+                abi.encodePacked(
+                    sender,
+                    receiver,
+                    relayer,
+                    inputToken,
+                    outputToken,
+                    inputAmount,
+                    outputAmount,
+                    destinationChainId,
+                    block.timestamp
+                )
+            )
+        );
+
+        Intent memory intent = Intent({
+            sender: sender,
+            receiver: receiver,
+            relayer: relayer,
+            inputToken: inputToken,
+            outputToken: outputToken,
+            inputAmount: inputAmount,
+            outputAmount: outputAmount,
+            id: id,
+            originChainId: uint32(block.chainid),
+            destinationChainId: destinationChainId,
+            filledStatus: FilledStatus.NOT_FILLED
+        });
+
+        if (intent.inputToken == address(WETH) && msg.value > 0) {
+            if (msg.value != intent.inputAmount) {
+                revert MsgValueDoesNotMatchInputAmount();
+            }
+            // if the input token is WETH, deposit the amount to the contract
+            WETH.deposit{value: msg.value}();
+        } else {
+            // if the input token is not WETH, transfer the amount from the sender to the contract (lock)
+            IERC20(intent.inputToken).transferFrom(
+                msg.sender,
+                address(this),
+                intent.inputAmount
+            );
+        }
+
+        doesIntentExist[id] = true;
+
+        emit IntentCreated(intent);
+    }
+
     function bridgeWithPermit(
         BridgeParams calldata params
     ) external payable nonReentrant  {     
